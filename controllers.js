@@ -105,46 +105,6 @@ async function getRecentAcceptedSubmissions(username, limit = 15) {
   }
 }
 
-// const updateData = async (req, res) => {
-//   try {
-//     const { user_id, email, leetcode_username, codechef, codeforces } =
-//       req.body;
-//     // const user_id = req.user.id;
-//     console.log("Update Request:", req.body, req.user_id);
-
-//     if (
-//       !email ||
-//       !leetcode_username ||
-//       typeof codechef !== "boolean" ||
-//       typeof codeforces !== "boolean"
-//     ) {
-//       return res.status(400).json({
-//         message: "missing data",
-//         success: false,
-//       });
-//     }
-//     const new_data = await Preferences.findByIdAndUpdate(
-//       user_id,
-//       {
-//         email,
-//         leetcode_username,
-//         codechef,
-//         codeforces,
-//       },
-//       { new: true }
-//     );
-//     return res.status(200).json({
-//       success: true,
-//       message: "updated successfully",
-//       new_data,
-//     });
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: "error while updating the profile",
-//     });
-//   }
-// };
 const updateData = async (req, res) => {
   try {
     const { email, leetcode_username, codechef, codeforces } = req.body;
