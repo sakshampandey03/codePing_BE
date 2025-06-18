@@ -1,13 +1,12 @@
-import { Model } from "./model.js";
+import { Preferences } from "./models/preferences.js";
 
 import fetch from "node-fetch";
 import { getUpcomingCodeforcesContest } from "./utils/check_cf_contest.js";
 import { getNextCodechefContest } from "./utils/get_cc_details.js";
 
-import {codeforces_mail} from "./mail_templates/codeforces_contest.js"
+import { codeforces_mail } from "./mail_templates/codeforces_contest.js";
 import { lc_potd_mail } from "./mail_templates/lc_potd.js";
 import { codechef_mail } from "./mail_templates/codechef_contest.js";
-
 
 import { mailSender } from "./utils/mail_sender.js";
 
@@ -30,41 +29,62 @@ const getTodaysUTCReset = () => {
 const checkUserExists = async (req, res) => {
   const { username } = req.body;
   if (!username) {
-    return res.status(402).json({
-      success: "false",
-      message: "error verifying user",
+    return res.status(400).json({
+      success: false,
+      message: "Username is required",
     });
   }
-  const result = await fetch("https://leetcode.com/graphql", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: `
-        query getUserProfile($username: String!) {
-          matchedUser(username: $username) {
-            username
-            profile {
-              realName
-              userAvatar
+
+  try {
+    const result = await fetch("https://leetcode.com/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `
+          query getUserProfile($username: String!) {
+            matchedUser(username: $username) {
+              username
+              profile {
+                realName
+                userAvatar
+              }
             }
           }
-        }
-      `,
-      variables: { username },
-    }),
-  });
+        `,
+        variables: { username },
+      }),
+    });
 
-  const data = await result.json();
-  return !!data?.data?.matchedUser;
+    const data = await result.json();
+    const exists = !!data?.data?.matchedUser;
+
+    if (exists) {
+      return res.status(200).json({
+        success: true,
+        message: "Username verified",
+      });
+    } else {
+      return res.status(200).json({
+        success: false,
+        message: "Invalid username",
+      });
+    }
+  } catch (error) {
+    console.error("Error verifying user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong during verification",
+    });
+  }
 };
 
 async function getRecentAcceptedSubmissions(username, limit = 15) {
   try {
     const res = await fetch("https://leetcode.com/graphql", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: `
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `
         query recentAcSubmissions($username: String!, $limit: Int!) {
           recentAcSubmissionList(username: $username, limit: $limit) {
             titleSlug
@@ -72,105 +92,146 @@ async function getRecentAcceptedSubmissions(username, limit = 15) {
           }
         }
       `,
-      variables: { username, limit },
-      operationName: "recentAcSubmissions",
-    }),
-  });
+        variables: { username, limit },
+        operationName: "recentAcSubmissions",
+      }),
+    });
 
-  const data = await res.json();
-  // console.log("recentAcSubmissionList",data)
-  return data.data?.recentAcSubmissionList || [];
+    const data = await res.json();
+    // console.log("recentAcSubmissionList",data)
+    return data.data?.recentAcSubmissionList || [];
   } catch (error) {
-    console.log("error while getting recent Accepted solutions", error)
+    console.log("error while getting recent Accepted solutions", error);
   }
 }
 
+// const updateData = async (req, res) => {
+//   try {
+//     const { user_id, email, leetcode_username, codechef, codeforces } =
+//       req.body;
+//     // const user_id = req.user.id;
+//     console.log("Update Request:", req.body, req.user_id);
 
-
+//     if (
+//       !email ||
+//       !leetcode_username ||
+//       typeof codechef !== "boolean" ||
+//       typeof codeforces !== "boolean"
+//     ) {
+//       return res.status(400).json({
+//         message: "missing data",
+//         success: false,
+//       });
+//     }
+//     const new_data = await Preferences.findByIdAndUpdate(
+//       user_id,
+//       {
+//         email,
+//         leetcode_username,
+//         codechef,
+//         codeforces,
+//       },
+//       { new: true }
+//     );
+//     return res.status(200).json({
+//       success: true,
+//       message: "updated successfully",
+//       new_data,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: "error while updating the profile",
+//     });
+//   }
+// };
 const updateData = async (req, res) => {
   try {
-    const { user_id, email, leetcode_username, codechef, codeforces } =
-      req.body;
-    // const user_id = req.user.id;
-    console.log("Update Request:", req.body, req.user_id);
+    const { email, leetcode_username, codechef, codeforces } = req.body;
 
     if (
       !email ||
-      !leetcode_username ||
+      typeof leetcode_username !== "string" ||
       typeof codechef !== "boolean" ||
       typeof codeforces !== "boolean"
     ) {
       return res.status(400).json({
-        message: "missing data",
+        message: "Missing or invalid data",
         success: false,
       });
     }
-    const new_data = await Model.findByIdAndUpdate(
-      user_id,
-      {
+
+    let existing_user = await Preferences.findOne({ email });
+
+    if (existing_user) {
+      existing_user.leetcode_username = leetcode_username;
+      existing_user.codechef = codechef;
+      existing_user.codeforces = codeforces;
+      await existing_user.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Preferences updated successfully",
+      });
+    } else {
+      const new_user = await Preferences.create({
         email,
         leetcode_username,
         codechef,
         codeforces,
-      },
-      { new: true }
-    );
-    return res.status(200).json({
-      success: true,
-      message: "updated successfully",
-      new_data,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "error while updating the profile",
-    });
-  }
-};
-const addData = async (req, res) => {
-  try {
-    const { email, leetcode_username, codechef, codeforces } = req.body;
-    if (
-      !email ||
-      !leetcode_username ||
-      typeof codechef !== "boolean" ||
-      typeof codeforces !== "boolean"
-    ) {
-      return res.status(400).json({
-        message: "missing data",
-        success: false,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Preferences created successfully",
       });
     }
-    const new_user = await Model.create({
-      email,
-      leetcode_username,
-      codechef,
-      codeforces,
-    });
-    return res.status(200).json({
-      success: true,
-      message: "created successfully",
-    });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       success: false,
-      message: "error while adding the profile",
+      message: "Error while updating preferences",
     });
   }
 };
+
 const getData = async (req, res) => {
   try {
-    const user_id = req.body.id;
-    const userDetails = await Model.findById(user_id);
+    const email = req.query.email;
+    // console.log("email received is    ", email)
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const userDetails = await Preferences.findOne({ email });
+
+    if (!userDetails) {
+      // Return default preferences if user is new
+      return res.status(200).json({
+        success: true,
+        message: "User preferences not found, returning defaults",
+        userDetails: {
+          email,
+          leetcode_username: "",
+          codechef: false,
+          codeforces: false,
+        },
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: "user details fetched successfully",
+      message: "User details fetched successfully",
       userDetails,
     });
   } catch (error) {
+    console.error("Error in getData:", error);
     return res.status(500).json({
       success: false,
-      message: "error while fetching the profile",
+      message: "Error while fetching the profile",
     });
   }
 };
@@ -225,15 +286,15 @@ async function checkPOTDStatus(username, potdSlug) {
 const runLeetcodeNotifier = async (req, res) => {
   try {
     const slug = await getPOTDSlug();
-    const users = await Model.find({ leetcode_username: { $ne: "" } });
+    const users = await Preferences.find({ leetcode_username: { $ne: "" } });
 
     for (const { leetcode_username, email } of users) {
       const res = await checkPOTDStatus(leetcode_username, slug);
       if (!res.solved) {
-          console.log(`Sending email to ${leetcode_username}, on ${email}`);
-          const body = lc_potd_mail(slug, leetcode_username);
-          // console.log(slug)
-          await mailSender(email, "LeetCode Daily Challenge Reminder ", body);
+        console.log(`Sending email to ${leetcode_username}, on ${email}`);
+        const body = lc_potd_mail(slug, leetcode_username);
+        // console.log(slug)
+        await mailSender(email, "LeetCode Daily Challenge Reminder ", body);
       } else {
         console.log(`${leetcode_username} already solved POTD ✅`);
       }
@@ -243,7 +304,7 @@ const runLeetcodeNotifier = async (req, res) => {
       message: "successfully mailed the users",
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.status(500).json({
       success: false,
       message: "could not send the mails",
@@ -254,28 +315,34 @@ const runLeetcodeNotifier = async (req, res) => {
 const runCodechefNotifier = async (req, res) => {
   try {
     // check if today is wednesday
-  const today = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-  const day = new Date(today).getDay();
-  if(day != 3) return;
-  const contest = getNextCodechefContest();
+    const today = new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+    });
+    
+    const day = new Date(today).getDay();
+    if (day != 3) return res.status(200).json({
+        success:true,
+        message:"no contest today"
+      });
+    const contest = getNextCodechefContest();
 
-  const users = await Model.find({ codechef: true });
+    const users = await Preferences.find({ codechef: true });
 
-  for (const { email } of users) {
-    const body = codechef_mail(contest)
-    await mailSender(email, "CodeChef Contest Today ", body);
-    // console.log("email sent to ", email, "\n", body)
-  }
-  return res.status(200).json({
-    success:true,
-    message:"codechef reminders sent successfully"
-  })
+    for (const { email } of users) {
+      const body = codechef_mail(contest);
+      await mailSender(email, "CodeChef Contest Today ", body);
+      // console.log("email sent to ", email, "\n", body)
+    }
+    return res.status(200).json({
+      success: true,
+      message: "codechef reminders sent successfully",
+    });
   } catch (error) {
-    console.log("error in codechef reminders ", error)
+    console.log("error in codechef reminders ", error);
     return res.status(500).json({
-      success:true,
-      message:"successfully sent codechef reminders"
-    })
+      success: true,
+      message: "successfully sent codechef reminders",
+    });
   }
 };
 function isTodayIST(unixSeconds) {
@@ -290,36 +357,39 @@ function isTodayIST(unixSeconds) {
 
 const runCodeforcesNotifier = async (req, res) => {
   try {
+    
     const contest = await getUpcomingCodeforcesContest();
-  if (!contest || !isTodayIST(contest.startTimeSeconds)) {
-    console.log("No Codeforces contest today");
-    return;
-  }
+    if (!contest || !isTodayIST(contest.startTimeSeconds)) {
+      console.log("No Codeforces contest today");
+      return res.status(200).json({
+        success:true,
+        message:"no contest today"
+      });
+    }
     // console.log(contest)
-  const users = await Model.find({ codeforces: true });
+    const users = await Preferences.find({ codeforces: true });
 
-  for (const { email } of users) {
-    const body = codeforces_mail(contest);
-    await mailSender(email, "Codeforces Contest Today!", body);
-    console.log(`Email sent to ${email} with body \n ${body}`);
-  }
-  return res.status(200).json({
-    success:true,
-    message: "successfully sent codeforces reminders"
-  })
+    for (const { email } of users) {
+      const body = codeforces_mail(contest);
+      await mailSender(email, "Codeforces Contest Today!", body);
+      console.log(`Email sent to ${email} with body \n ${body}`);
+    }
+    return res.status(200).json({
+      success: true,
+      message: "successfully sent codeforces reminders",
+    });
   } catch (error) {
-    console.log("error in sending codeforces contest reminders ", error)
+    console.log("error in sending codeforces contest reminders ", error);
     return res.status(500).json({
-    success:false,
-    message: "could not send codeforces reminders"
-  })
+      success: false,
+      message: "could not send codeforces reminders",
+    });
   }
 };
 
 export {
   updateData,
   getData,
-  addData,
   runCodechefNotifier,
   runLeetcodeNotifier,
   runCodeforcesNotifier,

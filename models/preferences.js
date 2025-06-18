@@ -19,4 +19,4 @@ const modelSchema = new mongoose.Schema({
     }
 })
 
-export const Model = mongoose.model("Model", modelSchema);
+export const Preferences = mongoose.model("Preferences", modelSchema);
