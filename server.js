@@ -15,7 +15,7 @@ const app = express()
 
 app.use(CookieParser());
 app.use(cors({
-    origin: "https://codeping-v1.vercel.app/",
+    origin: "https://codeping-v1.vercel.app",
     credentials: true,
 }))
 
