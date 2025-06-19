@@ -5,6 +5,7 @@ dotenv.config();
 const login = async (req, res) => {
   try {
     const { name, email, avatar } = req.body;
+    console.log(req.body);
     let user;
     user = await User.findOne({ email });
     if (!user) {
@@ -23,6 +24,8 @@ const login = async (req, res) => {
     );
     res.cookie("access-token", token, {
       httpOnly: true,
+      sameSite: "None",
+      secure: true,
     });
 
     res.status(200).json({
@@ -50,9 +53,9 @@ const logout = async (req, res) => {
   } catch (error) {
     console.log("error in logout controller ", error);
     return res.status(500).json({
-        success:false, 
-        message:"error in logout backend"
-    })
+      success: false,
+      message: "error in logout backend",
+    });
   }
 };
 
@@ -79,4 +82,4 @@ const getUser = async (req, res) => {
   }
 };
 
-export { getUser, login , logout};
+export { getUser, login, logout };
