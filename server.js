@@ -30,6 +30,12 @@ app.get("/", (req, res) =>{
         message : "your server is up and running",
     })
 })
+app.get("/ping", (req, res) => {
+  console.log("Ping received at", new Date().toISOString());
+  res.status(200).send("Pong! Backend is awake.");
+});
+
+
 app.listen(PORT, ()=>{
     console.log("your server is running at port ", PORT)
 })
