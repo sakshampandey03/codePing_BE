@@ -1,6 +1,6 @@
 import express from 'express'
 import { getUser, login, logout } from '../auth.js';
-import {updateData, getData, runLeetcodeNotifier, runCodechefNotifier, runCodeforcesNotifier, checkUserExists } from '../controllers.js'
+import {updateData, getData, runLeetcodeNotifier, runCodechefNotifier, runCodeforcesNotifier, checkUserExists, submitFeedback } from '../controllers.js'
 const router = express.Router();
 
 router.post("/login", login)
@@ -15,6 +15,8 @@ router.post("/verify_user", checkUserExists)
 router.get("/leetcode", runLeetcodeNotifier);
 router.get("/codechef", runCodechefNotifier);
 router.get("/codeforces", runCodeforcesNotifier);
+
+router.post("/feedback", submitFeedback)
 
 
 
