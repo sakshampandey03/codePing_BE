@@ -16,8 +16,8 @@ jobs:
     steps:
       - name: Wake up Render server
         run: |
-          curl -X GET "https://codeping-be.onrender.com/api/v1/get_user" \
+          curl -X GET "https://codeping-be.onrender.com/ping" \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
             -H "Accept: application/json" \
-            -H "Connection: keep-alive"
+            -H "Connection: keep-alive" \
             -H "Referer: https://codeping-v1.vercel.app/"
