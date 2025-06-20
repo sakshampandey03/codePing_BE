@@ -1,22 +1,90 @@
-name: Ping Render API Manually & Scheduled
+name: Ping and Run Scheduled APIs
 
 on:
-  # For manual trigger from GitHub UI
-  workflow_dispatch:
-
-  # Scheduled at 8 PM, 3 PM and 4 PM IST (14:30 and 16:30 UTC)
+  workflow-dispatch:
+  
   schedule:
-    - cron: "30 14 * * *"
-    - cron: "30 9 * * *"
-    - cron: "30 10 * * *"
+    # 3:00 PM IST wake
+    - cron: '30 09 * * *'
+    # 3:05 PM IST codeforces
+    - cron: '35 09 * * *'
+    # 4:00 PM IST wake
+    - cron: '30 10 * * *'
+    # 4:05 PM IST codechef
+    - cron: '35 10 * * *'
+    # 8:00 PM IST wake
+    - cron: '30 14 * * *'
+    # 8:05 PM IST leetcode
+    - cron: '35 14 * * *'
 
 jobs:
-  ping:
+  ping-codeforces:
+    if: github.event.schedule == '30 09 * * *'
     runs-on: ubuntu-latest
     steps:
-      - name: Wake up Render server
+      - name: Wake Render before Codeforces
         run: |
           curl -X GET "https://codeping-be.onrender.com/ping" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json" \
+            -H "Connection: keep-alive" \
+            -H "Referer: https://codeping-v1.vercel.app/"
+
+  run-codeforces:
+    if: github.event.schedule == '35 09 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Codeforces API
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/api/v1/codeforces" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json" \
+            -H "Connection: keep-alive" \
+            -H "Referer: https://codeping-v1.vercel.app/"
+
+  ping-codechef:
+    if: github.event.schedule == '30 10 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render before Codechef
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/ping" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json" \
+            -H "Connection: keep-alive" \
+            -H "Referer: https://codeping-v1.vercel.app/"
+
+  run-codechef:
+    if: github.event.schedule == '35 10 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Codechef API
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/api/v1/codechef" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json" \
+            -H "Connection: keep-alive" \
+            -H "Referer: https://codeping-v1.vercel.app/"
+
+  ping-leetcode:
+    if: github.event.schedule == '30 14 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render before Leetcode
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/ping" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json" \
+            -H "Connection: keep-alive" \
+            -H "Referer: https://codeping-v1.vercel.app/"
+
+  run-leetcode:
+    if: github.event.schedule == '35 14 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Leetcode API
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/api/v1/leetcode" \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
             -H "Accept: application/json" \
             -H "Connection: keep-alive" \
