@@ -305,7 +305,7 @@ const day = istNow.getDay();
     });
   }
 };
-runCodechefNotifier();
+// runCodechefNotifier();
 function isTodayIST(unixSeconds) {
   const istNow = new Date().toLocaleDateString("en-IN", {
     timeZone: "Asia/Kolkata",
