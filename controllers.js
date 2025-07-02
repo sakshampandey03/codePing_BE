@@ -276,11 +276,10 @@ const runLeetcodeNotifier = async (req, res) => {
 const runCodechefNotifier = async (req, res) => {
   try {
     // check if today is wednesday
-    const today = new Date().toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-    });
-    
-    const day = new Date(today).getDay();
+    const now = new Date();
+const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+const day = istNow.getDay();
+
     if (day != 3) return res.status(200).json({
         success:true,
         message:"no contest today"
@@ -306,6 +305,7 @@ const runCodechefNotifier = async (req, res) => {
     });
   }
 };
+runCodechefNotifier();
 function isTodayIST(unixSeconds) {
   const istNow = new Date().toLocaleDateString("en-IN", {
     timeZone: "Asia/Kolkata",
