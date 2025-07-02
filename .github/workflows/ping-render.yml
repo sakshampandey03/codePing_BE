@@ -1,7 +1,6 @@
 name: Ping and Run Scheduled APIs
 
 on:
-  workflow-dispatch:
   
   schedule:
     # 3:00 PM IST wake
