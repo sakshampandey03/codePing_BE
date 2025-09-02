@@ -304,7 +304,7 @@ const runCodechefNotifier = async (req, res) => {
 const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 const day = istNow.getDay();
 
-      if (day != 3) return res.status(200).json({
+      if (day == 3) return res.status(200).json({
           success:true,
           message:"no contest today"
         });
@@ -331,7 +331,7 @@ const day = istNow.getDay();
     });
   }
 };
-// runCodechefNotifier();
+runCodechefNotifier();
 function isTodayIST(unixSeconds) {
   const istNow = new Date().toLocaleDateString("en-IN", {
     timeZone: "Asia/Kolkata",
