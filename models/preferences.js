@@ -16,6 +16,14 @@ const modelSchema = new mongoose.Schema({
     codeforces :{
         type : Boolean,
         default : false
+    }, 
+    codechef_calendar : {
+        type : Boolean,
+        default : false,
+    },
+    codeforces_calendar : {
+        type : Boolean,
+        default : false,
     }
 })
 

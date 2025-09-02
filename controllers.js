@@ -11,6 +11,8 @@ import { codechef_mail } from "./mail_templates/codechef_contest.js";
 import { mailSender } from "./utils/mail_sender.js";
 import { Feedback } from "./models/feedback.js";
 
+import { addContestEvent } from "./utils/addToCalendar.js";
+
 const getTodaysUTCReset = () => {
   const now = new Date();
   return (
@@ -108,13 +110,15 @@ async function getRecentAcceptedSubmissions(username, limit = 15) {
 
 const updateData = async (req, res) => {
   try {
-    const { email, leetcode_username, codechef, codeforces } = req.body;
+    const { email, leetcode_username, codechef, codeforces, codechef_calendar, codefoces_calendar } = req.body;
 
     if (
       !email ||
       typeof leetcode_username !== "string" ||
       typeof codechef !== "boolean" ||
-      typeof codeforces !== "boolean"
+      typeof codeforces !== "boolean" ||
+      typeof codechef_calendar !== "boolean" ||
+      typeof codefoces_calendar !== "boolean"
     ) {
       return res.status(400).json({
         message: "Missing or invalid data",
@@ -128,6 +132,8 @@ const updateData = async (req, res) => {
       existing_user.leetcode_username = leetcode_username;
       existing_user.codechef = codechef;
       existing_user.codeforces = codeforces;
+      existing_user.codechef_calendar = codechef_calendar;
+      existing_user.codeforces_calendar = codeforces_calendar;
       await existing_user.save();
 
       return res.status(200).json({
@@ -140,6 +146,8 @@ const updateData = async (req, res) => {
         leetcode_username,
         codechef,
         codeforces,
+        codechef_calendar,
+        codeforces_calendar
       });
 
       return res.status(200).json({
@@ -273,6 +281,22 @@ const runLeetcodeNotifier = async (req, res) => {
   }
 };
 
+function getTodayAtIST(hour, minute = 0) {
+  const now = new Date();
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  const mm = pad(now.getMonth() + 1);
+  const dd = pad(now.getDate());
+  const HH = pad(hour);
+  const MM = pad(minute);
+  const SS = "00";
+
+  return `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}+05:30`;
+}
+
+
+
 const runCodechefNotifier = async (req, res) => {
   try {
     // check if today is wednesday
@@ -280,23 +304,25 @@ const runCodechefNotifier = async (req, res) => {
 const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 const day = istNow.getDay();
 
-    if (day != 3) return res.status(200).json({
-        success:true,
-        message:"no contest today"
+      if (day != 3) return res.status(200).json({
+          success:true,
+          message:"no contest today"
+        });
+      const contest = getNextCodechefContest();
+      const startISO =  getTodayAtIST(20);
+      const endISO = getTodayAtIST(21, 30);
+      addContestEvent("codechef", contest.contestName, "", contest.link, startISO, endISO);
+      const users = await Preferences.find({ codechef: true });
+
+      for (const { email } of users) {
+        const body = codechef_mail(contest);
+        // await mailSender(email, "CodeChef Contest Today ", body);
+        // console.log("email sent to ", email, "\n", body)
+      }
+      return res.status(200).json({
+        success: true,
+        message: "codechef reminders sent successfully",
       });
-    const contest = getNextCodechefContest();
-
-    const users = await Preferences.find({ codechef: true });
-
-    for (const { email } of users) {
-      const body = codechef_mail(contest);
-      await mailSender(email, "CodeChef Contest Today ", body);
-      // console.log("email sent to ", email, "\n", body)
-    }
-    return res.status(200).json({
-      success: true,
-      message: "codechef reminders sent successfully",
-    });
   } catch (error) {
     console.log("error in codechef reminders ", error);
     return res.status(500).json({
@@ -315,7 +341,29 @@ function isTodayIST(unixSeconds) {
   });
   return istNow === contestDate;
 }
+function contestToISO(startTimeSeconds, durationSeconds) {
+  const start = new Date(startTimeSeconds * 1000); // convert sec → ms
+  const end = new Date((startTimeSeconds + durationSeconds) * 1000);
 
+  // helper to format with +05:30
+  const formatIST = (date) => {
+    const pad = (n) => String(n).padStart(2, "0");
+
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1);
+    const dd = pad(date.getDate());
+    const HH = pad(date.getHours());
+    const MM = pad(date.getMinutes());
+    const SS = pad(date.getSeconds());
+
+    return `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}+05:30`;
+  };
+
+  return {
+    start: formatIST(start),
+    end: formatIST(end),
+  };
+}
 const runCodeforcesNotifier = async (req, res) => {
   try {
     
@@ -329,7 +377,17 @@ const runCodeforcesNotifier = async (req, res) => {
     }
     // console.log(contest)
     const users = await Preferences.find({ codeforces: true });
-
+    const {
+      name,
+      startTimeSeconds,
+      durationSeconds,
+      id,
+    } = contest;
+    const hours = Math.floor(durationSeconds / 3600);
+    const minutes = Math.floor((durationSeconds % 3600) / 60);
+    const link = `https://codeforces.com/contests/${id}`;
+    const {start, end} = contestToISO(startTimeSeconds, durationSeconds);
+    addContestEvent("codeforces", name, `duration : ${hours} ${minutes}`, link, start, end);
     for (const { email } of users) {
       const body = codeforces_mail(contest);
       await mailSender(email, "Codeforces Contest Today!", body);
