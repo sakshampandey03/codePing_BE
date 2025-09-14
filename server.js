@@ -5,7 +5,7 @@ import CookieParser from 'cookie-parser'
 import cors from 'cors'
 import { router } from './routes/Routes.js'
 
-
+import { getStats } from './controllers/stats.js'
 
 
 dotenv.config()
@@ -14,10 +14,30 @@ const PORT = 3000
 const app = express()
 
 app.use(CookieParser());
+
+const allowedOrigins = [
+  "http://localhost:5173",          // Vite dev
+  "http://localhost:3000",          // CRA or React dev
+  "https://codeping-v1.vercel.app"  // Production
+];
+
 app.use(cors({
-    origin: "https://codeping-v1.vercel.app",
-    credentials: true,
-}))
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Postman/curl
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS: " + origin));
+  },
+  credentials: true,
+}));
+
+// ✅ Public stats route (open access)
+app.get("/api/v1/stats",
+  cors({ origin: "*", credentials: false }),
+  getStats
+);
+
 
 app.use(express.json())
 

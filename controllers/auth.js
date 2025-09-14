@@ -1,4 +1,4 @@
-import { User } from "./models/userModel.js";
+import { User } from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
@@ -68,7 +68,7 @@ const getUser = async (req, res) => {
         message: "unauthorized access",
       });
     }
-    const user = await jwt.verify(token, process.env.JWT_SECRET);
+    const user = jwt.verify(token, process.env.JWT_SECRET);
     return res.status(200).json({
       success: true,
       user,

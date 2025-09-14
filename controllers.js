@@ -304,7 +304,7 @@ const runCodechefNotifier = async (req, res) => {
 const istNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 const day = istNow.getDay();
 
-      if (day == 3) return res.status(200).json({
+      if (day != 3) return res.status(200).json({
           success:true,
           message:"no contest today"
         });
@@ -316,7 +316,7 @@ const day = istNow.getDay();
 
       for (const { email } of users) {
         const body = codechef_mail(contest);
-        // await mailSender(email, "CodeChef Contest Today ", body);
+        await mailSender(email, "CodeChef Contest Today ", body);
         // console.log("email sent to ", email, "\n", body)
       }
       return res.status(200).json({
@@ -331,7 +331,7 @@ const day = istNow.getDay();
     });
   }
 };
-runCodechefNotifier();
+// runCodechefNotifier();
 function isTodayIST(unixSeconds) {
   const istNow = new Date().toLocaleDateString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -387,7 +387,7 @@ const runCodeforcesNotifier = async (req, res) => {
     const minutes = Math.floor((durationSeconds % 3600) / 60);
     const link = `https://codeforces.com/contests/${id}`;
     const {start, end} = contestToISO(startTimeSeconds, durationSeconds);
-    addContestEvent("codeforces", name, `duration : ${hours} ${minutes}`, link, start, end);
+    addContestEvent("codeforces", name, `duration : ${hours} hr ${minutes} mins`, link, start, end);
     for (const { email } of users) {
       const body = codeforces_mail(contest);
       await mailSender(email, "Codeforces Contest Today!", body);

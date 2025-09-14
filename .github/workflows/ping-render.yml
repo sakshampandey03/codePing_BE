@@ -1,7 +1,6 @@
 name: Ping and Run Scheduled APIs
 
 on:
-  
   schedule:
     # 3:00 PM IST wake
     - cron: '30 09 * * *'
@@ -13,8 +12,18 @@ on:
     - cron: '35 10 * * *'
     # 8:00 PM IST wake
     - cron: '30 14 * * *'
-    # 8:05 PM IST leetcode
+    # 8:05 PM IST leetcode POTD
     - cron: '35 14 * * *'
+    # 2:00 PM IST LeetCode contests
+    - cron: '30 08 * * *'
+    # 2:05 PM IST run LeetCode contests
+    - cron: '35 08 * * *'
+    - cron: '30 22 * * *'  # 4:00 AM IST cohort update ping
+    - cron: '45 22 * * *'  # 4:15 AM IST 1st year
+    - cron: '00 23 * * *'  # 4:30 AM IST 2nd year
+    - cron: '15 23 * * *'  # 4:45 AM IST 3rd year
+    - cron: '30 23 * * *'  # 5:00 AM IST 4th year
+    - cron: '45 23 * * *'  # 5:15 AM IST graduated
 
 jobs:
   ping-codeforces:
@@ -69,7 +78,7 @@ jobs:
     if: github.event.schedule == '30 14 * * *'
     runs-on: ubuntu-latest
     steps:
-      - name: Wake Render before Leetcode
+      - name: Wake Render before Leetcode POTD
         run: |
           curl -X GET "https://codeping-be.onrender.com/ping" \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
@@ -77,14 +86,87 @@ jobs:
             -H "Connection: keep-alive" \
             -H "Referer: https://codeping-v1.vercel.app/"
 
-  run-leetcode:
+  run-leetcode-potd:
     if: github.event.schedule == '35 14 * * *'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Leetcode API
+      - name: Trigger Leetcode POTD API
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/api/v1/leetcodepotd" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json" \
+            -H "Connection: keep-alive" \
+            -H "Referer: https://codeping-v1.vercel.app/"
+
+  ping-leetcode-contests:
+    if: github.event.schedule == '30 08 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render before Leetcode contests
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/ping" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json" \
+            -H "Connection: keep-alive" \
+            -H "Referer: https://codeping-v1.vercel.app/"
+
+  run-leetcode-contests:
+    if: github.event.schedule == '35 08 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Leetcode contests API
         run: |
           curl -X GET "https://codeping-be.onrender.com/api/v1/leetcode" \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
             -H "Accept: application/json" \
             -H "Connection: keep-alive" \
             -H "Referer: https://codeping-v1.vercel.app/"
+  ping-cohort:
+    if: github.event.schedule == '30 22 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake server for cohort updates
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/ping" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+            -H "Accept: application/json"
+
+  update-1styr:
+    if: github.event.schedule == '45 22 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update cohort 1st year
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/update/1styr"
+
+  update-2ndyr:
+    if: github.event.schedule == '00 23 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update cohort 2nd year
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/update/2ndyr"
+
+  update-3rdyr:
+    if: github.event.schedule == '15 23 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update cohort 3rd year
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/update/3rdyr"
+
+  update-4thyr:
+    if: github.event.schedule == '30 23 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update cohort 4th year
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/update/4thyr"
+
+  update-graduated:
+    if: github.event.schedule == '45 23 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update cohort graduated
+        run: |
+          curl -X GET "https://codeping-be.onrender.com/update/graduated"
