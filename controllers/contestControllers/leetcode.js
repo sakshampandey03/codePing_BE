@@ -138,7 +138,7 @@ async function checkPOTDStatus(username, potdSlug) {
 
   return { solved: false };
 }
-import { Preferences } from "../../models/preferences.js";
+
 import { getPOTDSlug } from "../../utils/get_potd_slug.js";
 import { checkPOTDStatus } from "../../utils/check_potd_status.js";
 import { lc_potd_mail } from "../../mail_templates/leetcode_potd.js";
