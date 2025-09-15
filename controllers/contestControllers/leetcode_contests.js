@@ -4,32 +4,58 @@ import { leetcode_mail } from "../../mail_templates/leetcode_contest.js";
 import { mailSender } from "../../utils/mail_sender.js";
 import { addContestEvent } from "../../utils/addToCalendar.js";
 
+
 function getDateAtIST(dateStr, hour) {
-  const [day, month, year] = new Date(dateStr).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" }).split("/");
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${String(hour).padStart(2, "0")}:00:00+05:30`;
+
+  const baseIST = new Date(
+    new Date(dateStr).toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+  baseIST.setHours(hour, 0, 0, 0);
+
+  return new Date(baseIST.getTime() - baseIST.getTimezoneOffset() * 60000).toISOString();
 }
 
 export const runLeetcodeNotifier = async (req, res) => {
   try {
-    const contests = getUpcomingLeetCodeContests(2); // get next two weekly and biweekly
-    const users = await Preferences.find({ leetcode_contests: true });
+   
+    const contests = getUpcomingLeetCodeContests(2);
+    if (!contests || !contests.length) {
+      console.log("No upcoming LeetCode contests found.");
+      return res.status(200).json({
+        success: true,
+        message: "No upcoming contests found",
+      });
+    }
+
+    const prefs = await Preferences.find({ leetcode_contests: true })
+      .populate("user", "email")
+      .exec();
+    const emails = prefs.map((p) => p.user?.email).filter(Boolean);
+
+    if (!emails.length) {
+      console.log("No subscribed users for LeetCode reminders.");
+      return res.status(200).json({
+        success: true,
+        message: "No subscribed users found",
+        contests,
+      });
+    }
 
     for (const contest of contests) {
-        console.log(contest)
+      console.log("Processing contest:", contest);
+
       const startISO = getDateAtIST(contest.date, contest.startHour);
       const endISO = getDateAtIST(contest.date, contest.endHour);
 
-      // Add calendar event
+      // Add to calendar
       addContestEvent("leetcode", contest.contestName, "", contest.link, startISO, endISO);
 
       // Send emails
-      for (const { email } of users) {
+      for (const email of emails) {
         const body = leetcode_mail(contest);
         await mailSender(email, `Reminder: ${contest.contestName}`, body);
+        console.log(`LeetCode reminder sent to ${email}`);
       }
-        // const body = leetcode_mail(contest);
-        // await mailSender("kumarsaksham224@gmail.com", `Reminder: ${contest.contestName}`, body);
-        
     }
 
     return res.status(200).json({
@@ -38,11 +64,10 @@ export const runLeetcodeNotifier = async (req, res) => {
       contests,
     });
   } catch (error) {
-    console.error("Error in LeetCode reminders", error);
+    console.error("Error in LeetCode reminders:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to send LeetCode reminders",
     });
   }
 };
-// runLeetCodeNotifier();

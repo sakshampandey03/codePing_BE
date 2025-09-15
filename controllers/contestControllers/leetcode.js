@@ -138,31 +138,55 @@ async function checkPOTDStatus(username, potdSlug) {
 
   return { solved: false };
 }
+import { Preferences } from "../../models/preferences.js";
+import { getPOTDSlug } from "../../utils/get_potd_slug.js";
+import { checkPOTDStatus } from "../../utils/check_potd_status.js";
+import { lc_potd_mail } from "../../mail_templates/leetcode_potd.js";
+import { mailSender } from "../../utils/mail_sender.js";
+
 export const runLeetcodeNotifierPOTD = async (req, res) => {
   try {
     const slug = await getPOTDSlug();
-    const users = await Preferences.find({ leetcode_username: { $ne: "" } });
 
-    for (const { leetcode_username, email } of users) {
-      const res = await checkPOTDStatus(leetcode_username, slug);
-      if (!res.solved) {
-        console.log(`Sending email to ${leetcode_username}, on ${email}`);
+    const prefs = await Preferences.find({ leetcode_username: { $ne: "" } })
+      .populate("user", "email") 
+      .exec();
+
+    if (!prefs.length) {
+      console.log("No users with linked LeetCode usernames.");
+      return res.status(200).json({
+        success: true,
+        message: "No eligible users found.",
+      });
+    }
+
+    for (const { leetcode_username, user } of prefs) {
+      const email = user?.email;
+      if (!email) {
+        console.warn(`No email found for user with LeetCode username: ${leetcode_username}`);
+        continue;
+      }
+
+      const status = await checkPOTDStatus(leetcode_username, slug);
+
+      if (!status.solved) {
+        console.log(`Sending email to ${leetcode_username} at ${email}`);
         const body = lc_potd_mail(slug, leetcode_username);
-        // console.log(slug)
-        await mailSender(email, "LeetCode Daily Challenge Reminder ", body);
+        await mailSender(email, "LeetCode Daily Challenge Reminder", body);
       } else {
         console.log(`${leetcode_username} already solved POTD ✅`);
       }
     }
+
     return res.status(200).json({
       success: true,
-      message: "successfully mailed the users",
+      message: "Successfully mailed the users.",
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error in POTD notifier:", error);
     return res.status(500).json({
       success: false,
-      message: "could not send the mails",
+      message: "Could not send the mails.",
     });
   }
 };

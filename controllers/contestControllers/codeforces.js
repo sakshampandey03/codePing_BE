@@ -2,12 +2,10 @@ import { Preferences } from "../../models/preferences.js";
 
 import { getUpcomingCodeforcesContest } from "../../utils/check_cf_contest.js";
 
-
 import { codeforces_mail } from "../../mail_templates/codeforces_contest.js";
 
 import { mailSender } from "../../utils/mail_sender.js";
 import { addContestEvent } from "../../utils/addToCalendar.js";
-
 
 function isTodayIST(unixSeconds) {
   const istNow = new Date().toLocaleDateString("en-IN", {
@@ -43,35 +41,41 @@ function isTodayIST(unixSeconds) {
 // }
 function contestToISO(startTimeSeconds, durationSeconds) {
   const start = new Date(startTimeSeconds * 1000).toISOString(); // UTC
-  const end = new Date((startTimeSeconds + durationSeconds) * 1000).toISOString();
+  const end = new Date(
+    (startTimeSeconds + durationSeconds) * 1000
+  ).toISOString();
   return { start, end };
 }
 
 export const runCodeforcesNotifier = async (req, res) => {
   try {
-    
     const contest = await getUpcomingCodeforcesContest();
     if (!contest || !isTodayIST(contest.startTimeSeconds)) {
       console.log("No Codeforces contest today");
       return res.status(200).json({
-        success:true,
-        message:"no contest today"
+        success: true,
+        message: "no contest today",
       });
     }
     // console.log(contest)
-    const users = await Preferences.find({ codeforces: true });
-    const {
-      name,
-      startTimeSeconds,
-      durationSeconds,
-      id,
-    } = contest;
+    const prefs = await Preferences.find({ codeforces: true })
+      .populate("user", "email")
+      .exec();
+    const emailList = prefs.map((p) => p.user?.email).filter(Boolean);
+    const { name, startTimeSeconds, durationSeconds, id } = contest;
     const hours = Math.floor(durationSeconds / 3600);
     const minutes = Math.floor((durationSeconds % 3600) / 60);
     const link = `https://codeforces.com/contests/${id}`;
-    const {start, end} = contestToISO(startTimeSeconds, durationSeconds);
-    addContestEvent("codeforces", name, `duration : ${hours} hr ${minutes} mins`, link, start, end);
-    for (const { email } of users) {
+    const { start, end } = contestToISO(startTimeSeconds, durationSeconds);
+    addContestEvent(
+      "codeforces",
+      name,
+      `duration : ${hours} hr ${minutes} mins`,
+      link,
+      start,
+      end
+    );
+    for (const email of emailList) {
       const body = codeforces_mail(contest);
       await mailSender(email, "Codeforces Contest Today!", body);
       console.log(`Email sent to ${email} with body \n ${body}`);
