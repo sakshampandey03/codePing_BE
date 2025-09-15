@@ -18,29 +18,35 @@ function isTodayIST(unixSeconds) {
   });
   return istNow === contestDate;
 }
+// function contestToISO(startTimeSeconds, durationSeconds) {
+//   const start = new Date(startTimeSeconds * 1000); // convert sec → ms
+//   const end = new Date((startTimeSeconds + durationSeconds) * 1000);
+
+//   // helper to format with +05:30
+//   const formatIST = (date) => {
+//     const pad = (n) => String(n).padStart(2, "0");
+
+//     const yyyy = date.getFullYear();
+//     const mm = pad(date.getMonth() + 1);
+//     const dd = pad(date.getDate());
+//     const HH = pad(date.getHours());
+//     const MM = pad(date.getMinutes());
+//     const SS = pad(date.getSeconds());
+
+//     return `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}+05:30`;
+//   };
+
+//   return {
+//     start: formatIST(start),
+//     end: formatIST(end),
+//   };
+// }
 function contestToISO(startTimeSeconds, durationSeconds) {
-  const start = new Date(startTimeSeconds * 1000); // convert sec → ms
-  const end = new Date((startTimeSeconds + durationSeconds) * 1000);
-
-  // helper to format with +05:30
-  const formatIST = (date) => {
-    const pad = (n) => String(n).padStart(2, "0");
-
-    const yyyy = date.getFullYear();
-    const mm = pad(date.getMonth() + 1);
-    const dd = pad(date.getDate());
-    const HH = pad(date.getHours());
-    const MM = pad(date.getMinutes());
-    const SS = pad(date.getSeconds());
-
-    return `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}+05:30`;
-  };
-
-  return {
-    start: formatIST(start),
-    end: formatIST(end),
-  };
+  const start = new Date(startTimeSeconds * 1000).toISOString(); // UTC
+  const end = new Date((startTimeSeconds + durationSeconds) * 1000).toISOString();
+  return { start, end };
 }
+
 export const runCodeforcesNotifier = async (req, res) => {
   try {
     
