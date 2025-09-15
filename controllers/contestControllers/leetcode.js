@@ -1,11 +1,9 @@
 import { Preferences } from "../../models/preferences.js";
-
 import fetch from "node-fetch";
-
 import { lc_potd_mail } from "../../mail_templates/lc_potd.js";
 
-
 import { mailSender } from "../../utils/mail_sender.js";
+
 
 
 export const checkUserExists = async (req, res) => {
@@ -139,10 +137,6 @@ async function checkPOTDStatus(username, potdSlug) {
   return { solved: false };
 }
 
-import { getPOTDSlug } from "../../utils/get_potd_slug.js";
-import { checkPOTDStatus } from "../../utils/check_potd_status.js";
-import { lc_potd_mail } from "../../mail_templates/leetcode_potd.js";
-import { mailSender } from "../../utils/mail_sender.js";
 
 export const runLeetcodeNotifierPOTD = async (req, res) => {
   try {
